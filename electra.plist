@@ -11,7 +11,7 @@
 <key>kind</key>
 <string>software-package</string>
 <key>url</key>
-<string>http://192.168.0.88/E%3A/tools/IOStools/ios11.3_jb/electra.ipa</string>
+<string>http://192.168.0.88:8000/electra.ipa</string>
 </dict>
 </array>
 <key>metadata</key>
