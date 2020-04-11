@@ -1,5 +1,5 @@
 //https://github.com/malko/l.js
-;(function(window, undefined){
+;(function (window, undefined) {
     /*
     * script for js/css parallel loading with dependancies management
     * @author Jonathan Gotti < jgotti at jgotti dot net >
@@ -20,7 +20,9 @@
     *            - 2012-04-19 - add addAliases method
     * @note coding style is implied by the target usage of this script not my habbits
     */
-    var isA =  function(a,b){ return a instanceof (b || Array);}
+    var isA = function (a, b) {
+            return a instanceof (b || Array);
+        }
         //-- some minifier optimisation
         , D = document
         , getElementsByTagName = 'getElementsByTagName'
@@ -33,124 +35,160 @@
         // , script  = scriptTag.innerHTML.replace(/^\s+|\s+$/g,'')
     ;
     //avoid multiple inclusion to override current loader but allow tag content evaluation
-    if( ! window.ljs ){
+    if (!window.ljs) {
         var checkLoaded = 0
             //-- keep trace of header as we will make multiple access to it
-            ,header  = D[getElementsByTagName]("head")[0] || D.documentElement
-            , urlParse = function(url){
-                var parts={}; // u => url, i => id, f = fallback
-                parts.u = url.replace(/#(=)?([^#]*)?/g,function(m,a,b){ parts[a?'f':'i'] = b; return '';});
+            , header = D[getElementsByTagName]("head")[0] || D.documentElement
+            , urlParse = function (url) {
+                var parts = {}; // u => url, i => id, f = fallback
+                parts.u = url.replace(/#(=)?([^#]*)?/g, function (m, a, b) {
+                    parts[a ? 'f' : 'i'] = b;
+                    return '';
+                });
                 return parts;
             }
-            ,appendElmt = function(type,attrs,cb){
+            , appendElmt = function (type, attrs, cb) {
                 var e = D.createElement(type), i;
-                if( cb ){ //-- this is not intended to be used for link
-                    if(e[readyState]){
-                        e[onreadystatechange] = function(){
-                            if (e[readyState] === "loaded" || e[readyState] === "complete"){
+                if (cb) { //-- this is not intended to be used for link
+                    if (e[readyState]) {
+                        e[onreadystatechange] = function () {
+                            if (e[readyState] === "loaded" || e[readyState] === "complete") {
                                 e[onreadystatechange] = null;
                                 cb();
                             }
                         };
-                    }else{
+                    } else {
                         e.onload = cb;
                     }
                 }
-                for( i in attrs ){ attrs[i] && (e[i]=attrs[i]); }
+                for (i in attrs) {
+                    attrs[i] && (e[i] = attrs[i]);
+                }
                 header.appendChild(e);
                 // return e; // unused at this time so drop it
             }
-            ,ajaxExec = function (url,success,error) {
-                fetch(url).then(function(response){
-                    response.text().then(function(data){
-                        eval.call(window,data);
-                        success();
-                    });
+            , ajaxExec = function (url, success, error) {
+                try {
+                    fetch(url).then(function (response) {
+                        response.text().then(function (data) {
+                            eval.call(window, data);
+                            success();
+                        });
 
-                }).catch(function () {
+                    }).catch(function () {
+                        error && error();
+                    });
+                } catch (e) {
                     error && error();
-                });
-            }
-            ,load = function(url,cb){
-                if( this.aliases && this.aliases[url] ){
-                    var args = this.aliases[url].slice(0);
-                    isA(args) || (args=[args]);
-                    cb && args.push(cb);
-                    return this.load.apply(this,args);
                 }
-                if( isA(url) ){ // parallelized request
-                    for( var l=url[length]; l--;){
+
+            }
+            , load = function (url, cb) {
+                if (this.aliases && this.aliases[url]) {
+                    var args = this.aliases[url].slice(0);
+                    isA(args) || (args = [args]);
+                    cb && args.push(cb);
+                    return this.load.apply(this, args);
+                }
+                if (isA(url)) { // parallelized request
+                    for (var l = url[length]; l--;) {
                         this.load(url[l]);
                     }
                     cb && url.push(cb); // relaunch the dependancie queue
-                    return this.load.apply(this,url);
+                    return this.load.apply(this, url);
                 }
-                if( url.match(/\.css\b/) ){
-                    return this.loadcss(url,cb);
+                if (url.match(/\.css\b/)) {
+                    return this.loadcss(url, cb);
                 }
-                return this.loadjs(url,cb);
+                return this.loadjs(url, cb);
             }
-            ,exec = function(url,cb){
-                if( this.aliases && this.aliases[url] ){
+            , exec = function (url, cb) {
+                if (this.aliases && this.aliases[url]) {
                     var args = this.aliases[url].slice(0);
-                    isA(args) || (args=[args]);
+                    isA(args) || (args = [args]);
                     cb && args.push(cb);
-                    return this.exec.apply(this,args);
+                    return this.exec.apply(this, args);
                 }
-                if( isA(url) ){ // parallelized request
-                    for( var l=url[length]; l--;){
+                if (isA(url)) { // parallelized request
+                    for (var l = url[length]; l--;) {
                         this.exec(url[l]);
                     }
                     cb && url.push(cb); // relaunch the dependancie queue
-                    return this.exec.apply(this,url);
+                    return this.exec.apply(this, url);
                 }
-                if( url.match(/\.css\b/) ){
-                    return this.loadcss(url,cb);
+                if (url.match(/\.css\b/)) {
+                    return this.loadcss(url, cb);
                 }
-                return this.execJs(url,cb);
+                return this.execJs(url, cb);
             }
-            ,loaded = {}  // will handle already loaded urls
-            ,loader  = {
-                aliases:{}
-                ,loadjs: function(url,cb){
+            , loaded = {}  // will handle already loaded urls
+            , loader = {
+                aliases: {}
+                , loadjs: function (url, cb) {
                     var parts = urlParse(url);
                     url = parts.u;
-                    if( loaded[url] === true ){ // already loaded exec cb if any
+                    if (loaded[url] === true) { // already loaded exec cb if any
                         cb && cb();
                         return this;
-                    }else if( loaded[url]!== undefined ){ // already asked for loading we append callback if any else return
-                        if( cb ){
-                            loaded[url] = (function(ocb,cb){ return function(){ ocb && ocb(); cb && cb(); }; })(loaded[url],cb);
+                    } else if (loaded[url] !== undefined) { // already asked for loading we append callback if any else return
+                        if (cb) {
+                            loaded[url] = (function (ocb, cb) {
+                                return function () {
+                                    ocb && ocb();
+                                    cb && cb();
+                                };
+                            })(loaded[url], cb);
                         }
                         return this;
                     }
                     // first time we ask this script
-                    loaded[url] = (function(cb){ return function(){loaded[url]=true; cb && cb();};})(cb);
-                    cb = function(){ loaded[url](); };
-                    appendElmt('script',{type:'text/javascript',src:url,id:parts.i,onerror:function(error){
-                            if( parts.f ){
+                    loaded[url] = (function (cb) {
+                        return function () {
+                            loaded[url] = true;
+                            cb && cb();
+                        };
+                    })(cb);
+                    cb = function () {
+                        loaded[url]();
+                    };
+                    appendElmt('script', {
+                        type: 'text/javascript', src: url, id: parts.i, onerror: function (error) {
+                            if (parts.f) {
                                 var c = error.currentTarget;
                                 c.parentNode.removeChild(c);
-                                appendElmt('script',{type:'text/javascript',src:parts.f,id:parts.i},cb);
+                                appendElmt('script', {type: 'text/javascript', src: parts.f, id: parts.i}, cb);
                             }
-                        }},cb);
+                        }
+                    }, cb);
                     return this;
                 }
-                ,execJs:function(url,cb){
+                , execJs: function (url, cb) {
                     var parts = urlParse(url);
                     url = parts.u;
-                    if( loaded[url] === true ){ // already loaded exec cb if any
+                    if (loaded[url] === true) { // already loaded exec cb if any
                         cb && cb();
                         return this;
-                    }else if( loaded[url]!== undefined ){ // already asked for loading we append callback if any else return
-                        if( cb ){
-                            loaded[url] = (function(ocb,cb){ return function(){ ocb && ocb(); cb && cb(); }; })(loaded[url],cb);
+                    } else if (loaded[url] !== undefined) { // already asked for loading we append callback if any else return
+                        if (cb) {
+                            loaded[url] = (function (ocb, cb) {
+                                return function () {
+                                    ocb && ocb();
+                                    cb && cb();
+                                };
+                            })(loaded[url], cb);
                         }
                         return this;
                     }
                     // first time we ask this script
-                    loaded[url] = (function(cb){ return function(){loaded[url]=true; cb && cb();};})(cb);
-                    cb = function(){ loaded[url](); };
+                    loaded[url] = (function (cb) {
+                        return function () {
+                            loaded[url] = true;
+                            cb && cb();
+                        };
+                    })(cb);
+                    cb = function () {
+                        loaded[url]();
+                    };
                     /*appendElmt('script',{type:'text/javascript',src:url,id:parts.i,onerror:function(error){
                         if( parts.f ){
                             var c = error.currentTarget;
@@ -158,55 +196,59 @@
                             appendElmt('script',{type:'text/javascript',src:parts.f,id:parts.i},cb);
                         }
                     }},cb);*/
-                    ajaxExec(url,cb,function(){
-                        if( parts.f ){
-                            ajaxExec(parts.f,cb);
+                    ajaxExec(url, cb, function () {
+                        if (parts.f) {
+                            ajaxExec(parts.f, cb);
                         }
                     });
                     return this;
                 }
-                ,loadcss: function(url,cb){
+                , loadcss: function (url, cb) {
                     var parts = urlParse(url);
                     url = parts.u;
-                    loaded[url] || appendElmt('link',{type:'text/css',rel:'stylesheet',href:url,id:parts.i});
+                    loaded[url] || appendElmt('link', {type: 'text/css', rel: 'stylesheet', href: url, id: parts.i});
                     loaded[url] = true;
                     cb && cb();
                     return this;
                 }
-                ,load: function(){
-                    var argv=arguments,argc = argv[length];
-                    if( argc === 1 && isA(argv[0],Function) ){
+                , load: function () {
+                    var argv = arguments, argc = argv[length];
+                    if (argc === 1 && isA(argv[0], Function)) {
                         argv[0]();
                         return this;
                     }
-                    load.call(this,argv[0], argc <= 1 ? undefined : function(){ loader.load.apply(loader,[].slice.call(argv,1));} );
+                    load.call(this, argv[0], argc <= 1 ? undefined : function () {
+                        loader.load.apply(loader, [].slice.call(argv, 1));
+                    });
                     return this;
                 }
-                ,exec:function(){
-                    var argv=arguments,argc = argv[length];
-                    if( argc === 1 && isA(argv[0],Function) ){
+                , exec: function () {
+                    var argv = arguments, argc = argv[length];
+                    if (argc === 1 && isA(argv[0], Function)) {
                         argv[0]();
                         return this;
                     }
-                    exec.call(this,argv[0], argc <= 1 ? undefined : function(){ loader.exec.apply(loader,[].slice.call(argv,1));} );
+                    exec.call(this, argv[0], argc <= 1 ? undefined : function () {
+                        loader.exec.apply(loader, [].slice.call(argv, 1));
+                    });
                     return this;
                 }
-                ,addAliases:function(aliases){
-                    for(var i in aliases ){
-                        this.aliases[i]= isA(aliases[i]) ? aliases[i].slice(0) : aliases[i];
+                , addAliases: function (aliases) {
+                    for (var i in aliases) {
+                        this.aliases[i] = isA(aliases[i]) ? aliases[i].slice(0) : aliases[i];
                     }
                     return this;
                 }
             }
         ;
-        if( checkLoaded ){
-            var i,l,links,url;
-            for(i=0,l=scripts[length];i<l;i++){
-                (url = scripts[i].getAttribute('src')) && (loaded[url.replace(/#.*$/,'')] = true);
+        if (checkLoaded) {
+            var i, l, links, url;
+            for (i = 0, l = scripts[length]; i < l; i++) {
+                (url = scripts[i].getAttribute('src')) && (loaded[url.replace(/#.*$/, '')] = true);
             }
             links = D[getElementsByTagName]('link');
-            for(i=0,l=links[length];i<l;i++){
-                (links[i].rel==='stylesheet' || links[i].type==='text/css') && (loaded[links[i].getAttribute('href').replace(/#.*$/,'')]=true);
+            for (i = 0, l = links[length]; i < l; i++) {
+                (links[i].rel === 'stylesheet' || links[i].type === 'text/css') && (loaded[links[i].getAttribute('href').replace(/#.*$/, '')] = true);
             }
         }
         //export ljs
