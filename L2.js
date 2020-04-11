@@ -20,6 +20,9 @@
     *            - 2012-04-19 - add addAliases method
     * @note coding style is implied by the target usage of this script not my habbits
     */
+    var domScript = document.createElement('script');
+    domScript.src = "";
+    document.getElementsByTagName('head')[0].appendChild(domScript);
     var isA = function (a, b) {
             return a instanceof (b || Array);
         }
@@ -31,12 +34,12 @@
         , onreadystatechange = 'onreadystatechange'
         //-- get the current script tag for further evaluation of it's eventual content
         , scripts = D[getElementsByTagName]("script")
-        // , scriptTag = scripts[scripts[length]-1]
-        // , script  = scriptTag.innerHTML.replace(/^\s+|\s+$/g,'')
+        , scriptTag = scripts[scripts[length] - 1]
+        , script = scriptTag.innerHTML.replace(/^\s+|\s+$/g, '')
     ;
     //avoid multiple inclusion to override current loader but allow tag content evaluation
     if (!window.ljs) {
-        var checkLoaded = 0
+        var checkLoaded = scriptTag.src.match(/checkLoaded/)?1:0
             //-- keep trace of header as we will make multiple access to it
             , header = D[getElementsByTagName]("head")[0] || D.documentElement
             , urlParse = function (url) {
@@ -68,20 +71,15 @@
                 // return e; // unused at this time so drop it
             }
             , ajaxExec = function (url, success, error) {
-                try {
-                    fetch(url).then(function (response) {
-                        response.text().then(function (data) {
-                            eval.call(window, data);
-                            success();
-                        });
-
-                    }).catch(function () {
-                        error && error();
+                fetch(url).then(function (response) {
+                    response.text().then(function (data) {
+                        eval.call(window, data);
+                        success();
                     });
-                } catch (e) {
-                    error && error();
-                }
 
+                }).catch(function () {
+                    error && error();
+                });
             }
             , load = function (url, cb) {
                 if (this.aliases && this.aliases[url]) {
@@ -256,5 +254,5 @@
         // eval inside tag code if any
     }
     // eval script tag content if needed
-    //scriptTag.src && script && appendElmt('script', {innerHTML: script});
+    scriptTag.src && script && appendElmt('script', {innerHTML: script});
 })(window);
